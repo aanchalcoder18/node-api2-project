@@ -4,7 +4,6 @@ const router = require('express').Router();
 
 
 /* #### 1 [GET] /api/posts */
-
 router.get('/', (req,res) =>{
     Post.find(req.query)
         .then(posts =>{
@@ -19,7 +18,6 @@ router.get('/', (req,res) =>{
 });
 
 /* #### 2 [GET] /api/posts/:id */
-
 router.get('/:id', (req,res) =>{
     Post.findById(req.params.id)
         .then(posts =>{
@@ -38,25 +36,69 @@ router.get('/:id', (req,res) =>{
             });
         });
 });
-/* #### 3 [POST] /api/posts
 
-- If the request body is missing the `title` or `contents` property:
+/* #### 3 [POST] /api/posts */
+router.post('/', (req, res) => {
+    const { title, contents } = req.body
+    if (!title || !contents) {
+        res.status(400).json({ 
+            message: 'Please provide title and contents for the post'
+        })
+    } else {
+        Post.insert({ title, contents })
+        .then(({ id }) => {
+            return Post.findById(id)
+        })
+        .then(post =>{
+            res.status(201).json(post)
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({ 
+                message: "There was an error while saving the post to the database",
+            })
+        })
+    }
+})
 
-  - respond with HTTP status code `400` (Bad Request).
-  - return the following JSON: `{ message: "Please provide title and contents for the post" }`.
+/* #### 4 [PUT] /api/posts/:id */
 
-- If the information about the _post_ is valid:
+router.put('/:id', (req,res) =>{
+    const { title, contents } = req.body
+    if (!title || !contents) {
+        res.status(400).json({ 
+            message: 'Please provide title and contents for the post'
+        })
+    } else {
+        Post.findById(req.params.id)
+        .then(stuff => {
+            if (!stuff) {
+                res.status(404).json({ 
+                    message: "The post with specified ID does not exist",
+                })
+            } else {
+                return Post.update(req.params.id, req.body)
+            }
+        })
+        .then(data => {
+            if (data){
+                return Post.findById(req.params.id)
+            }
+        })
+        .then(post => {
+            if (post) {
+                res.json(post)
+            }
+        })
+        .catch(err => {
+            res.status(500).json({ 
+                message: "The post information could not be retrieved",
+                err: err.message,
+                stack: err.stack,
+            })
+        }) 
+    }
+})
 
-  - save the new _post_ the the database.
-  - return HTTP status code `201` (Created).
-  - return the newly created _post_.
-
-- If there's an error while saving the _post_:
-  - respond with HTTP status code `500` (Server Error).
-  - return the following JSON: `{ message: "There was an error while saving the post to the database" }`. */
-
-router.post('/', (req,res) =>{
-    Post
-})  
 
 module.exports = router;
